@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: general-chatbot
+metadata:
+  template: general-chatbot@0.0.1-beta
+
+workflows:
+  up:
+    steps:
+      - azd: provision
+      - azd: deploy
+
+services:
+  chatbot:
+    project: .
+    language: js
+    host: containerapp
+
+hooks:
+  preprovision:
+    windows:
+      shell: pwsh
+      run: |
+        # Ensure required environment variables are set with defaults
+        azd env set MONGODB_CONNECTION_STRING "mongodb://localhost:27017/chatbot-sessions"
+        azd env set AZURE_OPENAI_ENDPOINT "https://your-azure-openai-resource.openai.azure.com/"
+        azd env set AZURE_OPENAI_DEPLOYMENT_NAME "gpt-4"
+        azd env set AZURE_OPENAI_API_VERSION "2024-02-01"
+    posix:
+      shell: sh
+      run: |
+        # Ensure required environment variables are set with defaults
+        azd env set MONGODB_CONNECTION_STRING "mongodb://localhost:27017/chatbot-sessions"
+        azd env set AZURE_OPENAI_ENDPOINT "https://your-azure-openai-resource.openai.azure.com/"
+        azd env set AZURE_OPENAI_DEPLOYMENT_NAME "gpt-4"
+        azd env set AZURE_OPENAI_API_VERSION "2024-02-01"
