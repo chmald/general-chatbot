@@ -1,6 +1,6 @@
 const express = require('express');
-const { OpenAIClient } = require('@azure/openai');
-const { DefaultAzureCredential } = require('@azure/identity');
+const { AzureOpenAI } = require('openai');
+const { DefaultAzureCredential, getBearerTokenProvider } = require('@azure/identity');
 const { AzureKeyCredential } = require('@azure/core-auth');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
@@ -14,6 +14,8 @@ let openAIClient;
 function initializeOpenAIClient() {
   try {
     const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+    const deployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4';
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2023-05-15';
     
     if (!endpoint) {
       throw new Error('AZURE_OPENAI_ENDPOINT is required');
@@ -22,7 +24,9 @@ function initializeOpenAIClient() {
     // Use Managed Identity for authentication (recommended for Azure-hosted apps)
     if (process.env.NODE_ENV === 'production' && !process.env.AZURE_OPENAI_API_KEY) {
       const credential = new DefaultAzureCredential();
-      openAIClient = new OpenAIClient(endpoint, credential);
+      const scope = "https://cognitiveservices.azure.com/.default";
+      const azureADTokenProvider = getBearerTokenProvider(credential, scope);
+      openAIClient = new AzureOpenAI({ endpoint, azureADTokenProvider, deployment, apiVersion });
       logger.info('Initialized Azure OpenAI client with Managed Identity');
     } else {
       // Fallback to API key for development or when specifically provided
@@ -30,8 +34,7 @@ function initializeOpenAIClient() {
       if (!apiKey) {
         throw new Error('AZURE_OPENAI_API_KEY is required when not using Managed Identity');
       }
-      const credential = new AzureKeyCredential(apiKey);
-      openAIClient = new OpenAIClient(endpoint, credential);
+      openAIClient = new AzureOpenAI({ endpoint, apiKey, deployment, apiVersion });
       logger.info('Initialized Azure OpenAI client with API Key');
     }
   } catch (error) {
@@ -90,12 +93,14 @@ router.post('/', async (req, res) => {
 
     // Call Azure OpenAI
     const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4';
-    const response = await openAIClient.getChatCompletions(deploymentName, messages, {
-      maxTokens: 1000,
+    const response = await openAIClient.chat.completions.create({
+      model: deploymentName,
+      messages: messages,
+      max_tokens: 1000,
       temperature: 0.7,
-      topP: 0.9,
-      frequencyPenalty: 0,
-      presencePenalty: 0,
+      top_p: 0.9,
+      frequency_penalty: 0,
+      presence_penalty: 0,
     });
 
     if (!response.choices || response.choices.length === 0) {

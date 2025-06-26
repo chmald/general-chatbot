@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Copy server package files
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production --ignore-scripts && npm cache clean --force
 
 # Stage 3: Production runtime
 FROM node:18-alpine AS production

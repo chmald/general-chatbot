@@ -11,7 +11,7 @@ workflows:
       - azd: deploy
 
 services:
-  chatbot:
+  general-chatbot:
     project: .
     language: js
     host: containerapp

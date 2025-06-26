@@ -39,6 +39,7 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {xForwardedForHeader: false}
 });
 app.use('/api', limiter);
 
